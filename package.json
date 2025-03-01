@@ -9,7 +9,6 @@
     "start": "nodemon --env-file=.env index.js",
     "postinstall": "npm uninstall bcrypt && npm install bcryptjs --save"
   },
-
   "keywords": [],
   "author": "",
   "license": "ISC",
