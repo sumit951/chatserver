@@ -1,6 +1,7 @@
 import express from "express";
 import { connectToDatabase } from "../lib/db.js";
-import bcrypt from 'bcrypt';
+//import bcrypt from 'bcrypt';
+import md5 from 'md5';
 import jwt from "jsonwebtoken";
 import { SendMailClient } from "zeptomail";
 
@@ -87,7 +88,7 @@ router.post('/adduser', verifyToken, async (req,res)=>{
         const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
         
         //const hashPassword = await bcrypt.hash(password,10)
-        
+        //const hashPassword = await md5(password)
         //await db.query("INSERT INTO users (name, email,employeeId,password,decryptPassword,addedon) VALUES (?,?,?,?,?,?)", [name, email, employeeId, hashPassword,password,formattedDate])
         await db.query("INSERT INTO users (name, email,userType,employeeId,verify,addedon) VALUES (?,?,?,?,?,?)", [name, email, userType, employeeId,verifyCode,formattedDate])
         return res.status(200).json({status:'success',message:"User Added Successfully!"})
@@ -147,7 +148,8 @@ router.put('/updateadmininfo', verifyToken, async (req,res)=>{
             //const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
             if(password!=null)
             {
-                const hashPassword = await bcrypt.hash(password,10)        
+                //const hashPassword = await bcrypt.hash(password,10)        
+                const hashPassword = await md5(password)
                 await db.query("UPDATE users set name =?, email =?, employeeId =?, password = ?, decryptPassword = ? WHERE id = ?",[name,email,employeeId,hashPassword,password,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"}) 
             }

@@ -1,6 +1,7 @@
 import express from "express";
 import { connectToDatabase } from "../lib/db.js";
-import bcrypt from 'bcrypt';
+//import bcrypt from 'bcrypt';
+import md5 from 'md5';
 import jwt from "jsonwebtoken";
 
 const router = express.Router();
@@ -15,8 +16,8 @@ router.post('/login', async (req,res)=>{
             return res.status(403).json({message:"User not Exist!"})
         }
 
-        const isMatched = await bcrypt.compare(password,rows[0].password)
-        if(!isMatched)
+        //const isMatched = await bcrypt.compare(password,rows[0].password)
+        if(md5(password)!=rows[0].password)
         {
             return res.status(403).json({message:"Incorrect Password!"})
         }
@@ -91,8 +92,8 @@ router.put('/createpassword', async (req,res)=>{
             //const password = 'hjksd798jhj3';
             //const d = new Date();
             //const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-            const hashPassword = await bcrypt.hash(password,10)
-            
+            //const hashPassword = await bcrypt.hash(password,10)
+            const hashPassword = await md5(password)
             //await db.query("INSERT INTO users (name, email,employeeId,password,decryptPassword,addedon) VALUES (?,?,?,?,?,?)", [name, email, employeeId, hashPassword,password,formattedDate])
             await db.query("UPDATE users set password = ?, decryptPassword = ?, verify = ? WHERE id = ?",[hashPassword,password,null,id])
             return res.status(200).json({message:"Password Created Successfully!"}) 
