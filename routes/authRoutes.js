@@ -10,7 +10,7 @@ router.post('/login', async (req,res)=>{
     const {email,password} = req.body;
     try {
         const db = await connectToDatabase()
-        const [rows] = await db.query('SELECT * FROM users WHERE userType !="EMPLOYEE" and status ="Active" and email =?',[email])
+        const [rows] = await db.query('SELECT * FROM users WHERE status ="Active" and email =?',[email])
         if(rows.length===0)
         {
             return res.status(403).json({message:"User not Exist!"})
@@ -23,7 +23,7 @@ router.post('/login', async (req,res)=>{
         }
 
         const token = jwt.sign({id:rows[0].id},process.env.JWT_KEY,{expiresIn:"3h"})
-        return res.status(200).json({token:token})
+        return res.status(200).json({userId: rows[0].id,name: rows[0].name,token:token,userType:rows[0].userType})
 
     } catch (error) {
         res.status(500).json(error.message)

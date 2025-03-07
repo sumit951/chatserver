@@ -23,7 +23,7 @@ const verifyToken = async (req, res, next) => {
 }
 
 router.post('/adduser', verifyToken, async (req,res)=>{
-    const {name,email,employeeId,userType} = req.body;
+    const {name,email,employeeId,userType,chatDeleteInDays} = req.body;
     try {
         const url = "api.zeptomail.com/";
         const token = process.env.ZEPTO_KEY;    
@@ -48,16 +48,23 @@ router.post('/adduser', verifyToken, async (req,res)=>{
                     }
                 }
             ],
+            "reply_to": 
+            [
+                {
+                    "address": "",
+                    "name": ""
+                } 
+            ],
             "subject": "Create Password || Rapid Collaborate",
             "textbody": "Easy to do from anywhere, with  Node.js",
             "htmlbody": "Hi "+name+"</br></br> Verify URL <a href='http://localhost:5173/createpassword/"+userId+"/"+verifyCode+"'> Click Here </a></br></br> Thanks</br> Rapid Collaborate",
-            /*"cc": 
+            "cc": 
             [
                 {
                 "email_address": 
                     {
-                        "address": "test3@example.com",
-                        "name": "test3"
+                        "address": "",
+                        "name": ""
                     }
                 }
             ],
@@ -66,11 +73,11 @@ router.post('/adduser', verifyToken, async (req,res)=>{
                 {
                 "email_address": 
                     {
-                        "address": "test4@example.com",
-                        "name": "test4"
+                        "address": "",
+                        "name": ""
                     }
                 }
-            ]*/
+            ]
         }).then((resp) => console.log(resp)).catch((error) => console.log(error));
         
         //return false;
@@ -90,7 +97,7 @@ router.post('/adduser', verifyToken, async (req,res)=>{
         //const hashPassword = await bcrypt.hash(password,10)
         //const hashPassword = await md5(password)
         //await db.query("INSERT INTO users (name, email,employeeId,password,decryptPassword,addedon) VALUES (?,?,?,?,?,?)", [name, email, employeeId, hashPassword,password,formattedDate])
-        await db.query("INSERT INTO users (name, email,userType,employeeId,verify,addedon) VALUES (?,?,?,?,?,?)", [name, email, userType, employeeId,verifyCode,formattedDate])
+        await db.query("INSERT INTO users (name, email,userType,employeeId,verify,addedon,chatDeleteInDays) VALUES (?,?,?,?,?,?,?)", [name, email, userType, employeeId,verifyCode,formattedDate,chatDeleteInDays])
         return res.status(200).json({status:'success',message:"User Added Successfully!"})
 
     } catch (error) {
@@ -131,7 +138,8 @@ router.get('/getadmininfo/:id', verifyToken, async (req,res)=>{
 })
 
 router.put('/updateadmininfo', verifyToken, async (req,res)=>{
-    const {id,name,email,employeeId,password} = req.body;
+    const {id,name,email,employeeId,password,chatDeleteInDays} = req.body;
+    //console.log(req.body);
     try {
         if(id && email)
         {
@@ -155,7 +163,7 @@ router.put('/updateadmininfo', verifyToken, async (req,res)=>{
             }
             else
             {      
-                await db.query("UPDATE users set name =?, email =?, employeeId =? WHERE id = ?",[name,email,employeeId,id])
+                await db.query("UPDATE users set name =?, email =?, employeeId =?, chatDeleteInDays = ?  WHERE id = ?",[name,email,employeeId,chatDeleteInDays,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"})
             }
         }
