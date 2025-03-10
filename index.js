@@ -22,7 +22,7 @@ const expressServer = app.listen(process.env.PORT, () => {
 const socketIO = new Server(expressServer, {
   cors: {
     //origin: "http://localhost:5173",
-    origin: "https://chatapp-git-main-sumit951s-projects.vercel.app/",
+    origin: "https://rc-chatapp.vercel.app/",
     methods: ["GET", "POST"]
   }
 });
