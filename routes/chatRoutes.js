@@ -28,7 +28,7 @@ router.get('/getuserchat/:id', verifyToken, async (req,res)=>{
             const decodeSenderid = atob(senderid)
             const db = await connectToDatabase()
             //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
-            const [rows] = await db.query(`SELECT * FROM messages WHERE (senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId}) `)
+            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId})) AND groupId IS NULL `)
             return res.status(200).json(rows)
         }
         else

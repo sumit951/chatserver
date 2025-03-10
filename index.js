@@ -21,7 +21,8 @@ const expressServer = app.listen(process.env.PORT, () => {
 
 const socketIO = new Server(expressServer, {
   cors: {
-    origin: "http://localhost:5173",
+    //origin: "http://localhost:5173",
+    origin: "https://chatapp-git-main-sumit951s-projects.vercel.app/",
     methods: ["GET", "POST"]
   }
 });
@@ -35,17 +36,13 @@ socketIO.on('connection', (socket) => {
     socket.on('message', (data) => {
       console.log(data);
 
+      //const newchat = db.query(`SELECT * FROM messages WHERE ((senderId = ${data.senderId} AND receiverId = ${data.receiverId}) OR (senderId = ${data.receiverId} AND receiverId = ${data.senderId})) AND groupId IS NULL`)
+      
       db.query("INSERT INTO messages (senderName, senderId,receiverId,message,messageType) VALUES (?,?,?,?,?)", [data.senderName, data.senderId, data.receiverId, data.message, data.messageType])
-      //const newchat = db.query(`SELECT * FROM messages WHERE (senderId = ${data.senderId} AND receiverId = ${data.receiverId}) OR (senderId = ${data.receiverId} AND receiverId = ${data.senderId}) `)
+      
       //return res.status(200).json({status:'success',message:"success"})
       
-      /* if(data.socketID && !activeUsers.some(activeUsers => activeUsers.userId === data.senderId))
-      {
-        activeUsers.push(newchat);
-        //console.log(activeUsers);
-      }
-      //Sends the list of activeUsers to the client
-      socketIO.emit('newUserResponse', activeUsers); */
+      //socketIO.emit('savedmessageResponse', newchat);
       socketIO.emit('messageResponse', data);
     });
 

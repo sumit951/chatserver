@@ -222,4 +222,20 @@ router.put('/updatestatus', async (req,res)=>{
     }
 })
 
+router.get('/getactivealluser', verifyToken, async (req,res)=>{
+    try {
+        const db = await connectToDatabase()
+        const [rows] = await db.query('SELECT id as userId,name as userName,upper(left(name,1)) as usershortName FROM users where status ="Active" ORDER BY id desc')
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"User data not Exist!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
 export default router;
