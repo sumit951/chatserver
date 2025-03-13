@@ -18,7 +18,7 @@ const verifyToken = async (req, res, next) => {
         req.userId = decoded.id
         next()
     } catch (error) {
-        return res.status(500).json({message:"server error"})
+        return res.status(500).json({message:error.message})
     }  
 }
 

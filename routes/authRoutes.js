@@ -22,7 +22,7 @@ router.post('/login', async (req,res)=>{
             return res.status(403).json({message:"Incorrect Password!"})
         }
 
-        const token = jwt.sign({id:rows[0].id},process.env.JWT_KEY,{expiresIn:"3h"})
+        const token = jwt.sign({id:rows[0].id},process.env.JWT_KEY,{expiresIn:"24h"})
         return res.status(200).json({userId: rows[0].id,name: rows[0].name,token:token,userType:rows[0].userType})
 
     } catch (error) {
@@ -41,7 +41,7 @@ const verifyToken = async (req, res, next) => {
         req.userId = decoded.id
         next()
     } catch (error) {
-        return res.status(500).json({message:"server error"})
+        return res.status(500).json({message:error.message})
     }  
 }
 

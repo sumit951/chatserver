@@ -46,6 +46,19 @@ socketIO.on('connection', (socket) => {
       socketIO.emit('messageResponse', data);
     });
 
+    socket.on('messagegroup', (data) => {
+      console.log(data);
+
+      //const newchat = db.query(`SELECT * FROM messages WHERE ((senderId = ${data.senderId} AND receiverId = ${data.receiverId}) OR (senderId = ${data.receiverId} AND receiverId = ${data.senderId})) AND groupId IS NULL`)
+      
+      db.query("INSERT INTO messages (senderName,senderId, groupId,message,messageType) VALUES (?,?,?,?,?)", [data.senderName, data.senderId, data.groupId, data.message, data.messageType])
+      
+      //return res.status(200).json({status:'success',message:"success"})
+      
+      //socketIO.emit('savedmessageResponse', newchat);
+      socketIO.emit('messagegroupResponse', data);
+    });
+
     socket.on('typing', (data) => socket.broadcast.emit('typingResponse', data));
 
     //Listens when a new user joins the server
