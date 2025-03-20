@@ -108,7 +108,7 @@ router.post('/adduser', verifyToken, async (req,res)=>{
 router.get('/getalluser', verifyToken, async (req,res)=>{
     try {
         const db = await connectToDatabase()
-        const [rows] = await db.query('SELECT *,DATE_FORMAT(addedon, "%d-%m-%Y %H:%i:%s") AS addedon FROM users where userType !="ADMIN" ORDER BY id desc')
+        const [rows] = await db.query('SELECT *,DATE_FORMAT(addedon, "%Y-%m-%d %H:%i:%s") AS addedon FROM users where userType !="ADMIN" ORDER BY id desc')
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
@@ -226,6 +226,24 @@ router.get('/getactivealluser', verifyToken, async (req,res)=>{
     try {
         const db = await connectToDatabase()
         const [rows] = await db.query('SELECT id as userId,name as userName,upper(left(name,1)) as usershortName FROM users where status ="Active" ORDER BY id desc')
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"User data not Exist!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+router.get('/getactiveallusergroup/:searchParam', verifyToken, async (req,res)=>{
+    try {
+        //console.log(req.params.searchParam);
+        const searchParam = req.params.searchParam
+        const db = await connectToDatabase()
+        const [rows] = await db.query(`SELECT id as userId,name as userName, email as userEmail ,upper(left(name,1)) as usershortName FROM users where status ="Active" and (name LIKE "%${searchParam}%" or email LIKE "%${searchParam}%" ) ORDER BY id desc`)
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
