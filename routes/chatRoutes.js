@@ -246,4 +246,71 @@ router.post('/addmembergroup', verifyToken, async (req,res)=>{
     }
 })
 
+router.get('/getuserselectedchat/:id/:selecteduserid', verifyToken, async (req,res)=>{
+    try {
+        let senderid  = req.params.id;
+        let selecteduserid  = req.params.selecteduserid;
+        //console.log(req.userId);
+        if(senderid)
+        {
+            const decodeSenderid = atob(senderid)
+            const decodeSelectedUserId = atob(selecteduserid)
+            //console.log(decodeSenderid);
+
+            const db = await connectToDatabase()
+            //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
+            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${decodeSelectedUserId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${decodeSelectedUserId})) AND groupId IS NULL `)
+            return res.status(200).json(rows)
+        }
+        else
+        {
+            return res.status(500).json({message:"server error2"})
+        }
+    } catch (error) {
+        res.status(500).json({message:error})
+    }
+})
+
+router.get('/getgroupselecteduserlist/:selecteduserid', verifyToken, async (req,res)=>{
+    try {
+        
+        let selecteduserid  = req.params.selecteduserid;
+        const decodeSelectedUserId = atob(selecteduserid)
+
+        const db = await connectToDatabase()
+        //const [rows] = await db.query(`SELECT groupId, groupName, upper(left(groupName,1)) as groupshortName FROM groups where createdBy = ${req.userId} ORDER BY groupId desc`)
+        const [rows] = await db.query(`SELECT group_members.groupId, groups.groupName, groups.totalMember, groups.createdBy, upper(left(groups.groupName,1)) as groupshortName FROM group_members INNER JOIN groups ON groups.groupId = group_members.groupId WHERE group_members.userId = ${decodeSelectedUserId}`)
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"Empty group list!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+
+router.get('/getinteractwithuserlist/:selecteduserid', verifyToken, async (req,res)=>{
+    try {
+        let selecteduserid  = req.params.selecteduserid;
+        const decodeSelectedUserId = atob(selecteduserid)
+
+        const db = await connectToDatabase()
+        const [rows] = await db.query(`SELECT DISTINCT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId}`)
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"User data not Exist!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+
 export default router;
