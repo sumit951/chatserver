@@ -312,5 +312,61 @@ router.get('/getinteractwithuserlist/:selecteduserid', verifyToken, async (req,r
     }
 })
 
+router.put('/setasdeletemessage/:messageId', verifyToken, async (req,res)=>{
+    let messageId  = req.params.messageId;
+    try {
+        const decodeMessageId = atob(messageId)
+
+        if(messageId)
+        {
+            //console.log(req.body);
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM messages WHERE messageId =?',[decodeMessageId])
+            if(rows.length===0)
+            {
+                return res.status(403).json({message:"Message not Exist!"})
+            }
+            
+            await db.query("UPDATE messages set deleteSts = ? WHERE messageId = ?",['Yes',decodeMessageId])
+            return res.status(200).json({status:'success',message:"Message Set as Deleted!"}) 
+        }
+        else
+        {
+            return res.status(403).json({status:'success',message:"Invalid messageid!"})
+        }
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+router.put('/updatesetaseditedmessage', verifyToken, async (req,res)=>{
+    const {messageId,oldMessage,newMessage} = req.body;
+    try {
+       
+
+        if(messageId)
+        {
+            //console.log(req.body);
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM messages WHERE messageId =?',[messageId])
+            if(rows.length===0)
+            {
+                return res.status(403).json({message:"Message not Exist!"})
+            }
+            
+            await db.query("UPDATE messages set message = ?, editSts = ? WHERE messageId = ?",[newMessage,'Yes',messageId])
+            return res.status(200).json({status:'success',message:"Message Set as Edited!"}) 
+        }
+        else
+        {
+            return res.status(403).json({status:'success',message:"Invalid messageid!"})
+        }
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
 
 export default router;
