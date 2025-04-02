@@ -275,7 +275,35 @@ router.put('/updatesetting', verifyToken, async (req,res)=>{
             d.setMinutes(d.getMinutes() + chatBusyDndTime);
             const BusyDndTime = parseInt(chatBusyDndTime)
             const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-            await db.query("UPDATE users set chatStatus = ?, chatBusyDndTime = ?, chatBusyDndAddedon = ? WHERE id = ?",[chatBusyDndstatus,BusyDndTime,formattedDate,req.userId])
+            await db.query("UPDATE users set chatStatus = ?, chatBusyDndTime = ?, chatBusyDndExpiredon = ? WHERE id = ?",[chatBusyDndstatus,BusyDndTime,formattedDate,req.userId])
+            return res.status(200).json({status:'success',message:"Setting Info. Changed Successfully!"}) 
+        }
+        else
+        {
+            return res.status(403).json({status:'success',message:"Invalid Userid!"})
+        }
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+router.put('/updatesettingtoactive', verifyToken, async (req,res)=>{
+    const {chatBusyDndstatus,chatBusyDndTime} = req.body;
+    //console.log(req.body);
+    
+    try {
+        if(req.userId)
+        {
+            //console.log(req.body);
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM users WHERE id =?',[req.userId])
+            if(rows.length===0)
+            {
+                return res.status(403).json({message:"User not Exist!"})
+            }
+
+            await db.query("UPDATE users set chatStatus = ?, chatBusyDndTime = ?, chatBusyDndExpiredon = ? WHERE id = ?",['Active',null,null,req.userId])
             return res.status(200).json({status:'success',message:"Setting Info. Changed Successfully!"}) 
         }
         else

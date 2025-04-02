@@ -28,7 +28,7 @@ router.get('/getuserchat/:id', verifyToken, async (req,res)=>{
             const decodeSenderid = atob(senderid)
             const db = await connectToDatabase()
             //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
-            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId})) AND groupId IS NULL `)
+            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId})) AND groupId IS NULL  AND replyTo IS NULL`)
             return res.status(200).json(rows)
         }
         else
@@ -98,7 +98,7 @@ router.get('/getgroupchat/:groupid', verifyToken, async (req,res)=>{
         {
             const decodegroupid = atob(groupid)
             const db = await connectToDatabase()
-            const [rows] = await db.query(`SELECT * FROM messages WHERE groupId = ${decodegroupid} AND receiverId IS NULL `)
+            const [rows] = await db.query(`SELECT * FROM messages WHERE groupId = ${decodegroupid} AND receiverId IS NULL AND replyTo IS NULL `)
             return res.status(200).json(rows)
         }
         else
@@ -259,7 +259,7 @@ router.get('/getuserselectedchat/:id/:selecteduserid', verifyToken, async (req,r
 
             const db = await connectToDatabase()
             //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
-            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${decodeSelectedUserId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${decodeSelectedUserId})) AND groupId IS NULL `)
+            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${decodeSelectedUserId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${decodeSelectedUserId})) AND groupId IS NULL  AND replyTo IS NULL`)
             return res.status(200).json(rows)
         }
         else
@@ -299,7 +299,7 @@ router.get('/getinteractwithuserlist/:selecteduserid', verifyToken, async (req,r
         const decodeSelectedUserId = atob(selecteduserid)
 
         const db = await connectToDatabase()
-        const [rows] = await db.query(`SELECT DISTINCT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId}`)
+        const [rows] = await db.query(`SELECT DISTINCT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName, u.chatStatus,u.chatBusyDndTime,u.chatBusyDndExpiredon FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId}`)
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
@@ -343,7 +343,6 @@ router.put('/setasdeletemessage/:messageId', verifyToken, async (req,res)=>{
 router.put('/updatesetaseditedmessage', verifyToken, async (req,res)=>{
     const {messageId,oldMessage,newMessage} = req.body;
     try {
-       
 
         if(messageId)
         {
@@ -365,6 +364,46 @@ router.put('/updatesetaseditedmessage', verifyToken, async (req,res)=>{
 
     } catch (error) {
         res.status(500).json(error.message)
+    }
+})
+
+router.get('/getrepliedmessages/:id', verifyToken, async (req,res)=>{
+    try {
+        let parentMessageId  = req.params.id;
+        //console.log(req.userId);
+        if(parentMessageId)
+        {
+            const db = await connectToDatabase()
+            //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
+            const [rows] = await db.query(`SELECT * FROM messages WHERE replyTo = ${parentMessageId} AND groupId IS NULL`)
+            return res.status(200).json(rows)
+        }
+        else
+        {
+            return res.status(500).json({message:"server error2"})
+        }
+    } catch (error) {
+        res.status(500).json({message:error})
+    }
+})
+
+router.get('/getrepliedmessagesgroup/:id', verifyToken, async (req,res)=>{
+    try {
+        let parentMessageId  = req.params.id;
+        //console.log(req.userId);
+        if(parentMessageId)
+        {
+            const db = await connectToDatabase()
+            //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
+            const [rows] = await db.query(`SELECT * FROM messages WHERE replyTo = ${parentMessageId} AND receiverId IS NULL`)
+            return res.status(200).json(rows)
+        }
+        else
+        {
+            return res.status(500).json({message:"server error2"})
+        }
+    } catch (error) {
+        res.status(500).json({message:error})
     }
 })
 

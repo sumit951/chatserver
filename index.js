@@ -117,6 +117,41 @@ socketIO.on('connection', (socket) => {
       }
       socketIO.emit('newUserResponse', activeUsers);
     });
+
+    socket.on('setChatStatus', (data) => socket.broadcast.emit('reloadChatStatus', data));
+
+    socket.on('replyMessage', async (data) => {
+      //console.log(data);
+      
+      if(data.senderId)
+      {
+        const response = await db.query("INSERT INTO messages (senderName, senderId,receiverId,message,messageType,replyTo) VALUES (?,?,?,?,?,?)", [data.senderName, data.senderId, data.receiverId, data.message, data.messageType, data.replyTo])
+
+        const messageId = response[0].insertId;
+        data["messageId"] = messageId;
+        data["replyTo"] = data.replyTo;
+        //console.log(data);
+        
+        //return res.status(200).json({status:'success',message:"success"})
+        
+        //socketIO.emit('savedmessageResponse', newchat);
+        socketIO.emit('messageResponse', data);
+      }
+      
+    });
+
+    socket.on('replyMessageGroup', async (data) => {
+      console.log(data);
+      
+      const response = await db.query("INSERT INTO messages (senderName,senderId, groupId,message,messageType,replyTo) VALUES (?,?,?,?,?,?)", [data.senderName, data.senderId, data.groupId, data.message, data.messageType, data.replyTo])
+
+      const messageId = response[0].insertId;
+      data["messageId"] = messageId;
+      //return res.status(200).json({status:'success',message:"success"})
+      
+      //socketIO.emit('savedmessageResponse', newchat);
+      socketIO.emit('messagegroupResponse', data);
+    });
 });
 
 app.use('/auth', authRouter)
