@@ -130,27 +130,29 @@ socketIO.on('connection', (socket) => {
         const messageId = response[0].insertId;
         data["messageId"] = messageId;
         data["replyTo"] = data.replyTo;
+        data["deleteSts"] = 'No';
         //console.log(data);
         
         //return res.status(200).json({status:'success',message:"success"})
         
         //socketIO.emit('savedmessageResponse', newchat);
-        socketIO.emit('messageResponse', data);
+        socketIO.emit('messageResponseReply', data);
       }
       
     });
 
     socket.on('replyMessageGroup', async (data) => {
-      console.log(data);
+      //console.log(data);
       
       const response = await db.query("INSERT INTO messages (senderName,senderId, groupId,message,messageType,replyTo) VALUES (?,?,?,?,?,?)", [data.senderName, data.senderId, data.groupId, data.message, data.messageType, data.replyTo])
 
       const messageId = response[0].insertId;
       data["messageId"] = messageId;
+      data["deleteSts"] = 'No';
       //return res.status(200).json({status:'success',message:"success"})
       
       //socketIO.emit('savedmessageResponse', newchat);
-      socketIO.emit('messagegroupResponse', data);
+      socketIO.emit('messagegroupResponseReply', data);
     });
 });
 
