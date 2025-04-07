@@ -57,7 +57,7 @@ router.post('/adduser', verifyToken, async (req,res)=>{
             ],
             "subject": "Create Password || Rapid Collaborate",
             "textbody": "Easy to do from anywhere, with  Node.js",
-            "htmlbody": "Hi "+name+"</br></br> Verify URL <a href='http://localhost:5173/createpassword/"+userId+"/"+verifyCode+"'> Click Here </a></br></br> Thanks</br> Rapid Collaborate",
+            "htmlbody": "Hi "+name+"</br></br> Verify URL <a href='https://rapidcollaborate.in/chat-app/createpassword/"+userId+"/"+verifyCode+"'> Click Here </a></br></br> Thanks</br> Rapid Collaborate",
             "cc": 
             [
                 {
@@ -139,7 +139,7 @@ router.get('/getadmininfo/:id', verifyToken, async (req,res)=>{
 
 router.put('/updateadmininfo', verifyToken, async (req,res)=>{
     const {id,name,email,employeeId,password,chatDeleteInDays} = req.body;
-    //console.log(req.body);
+    console.log(chatDeleteInDays);
     try {
         if(id && email)
         {
@@ -158,13 +158,12 @@ router.put('/updateadmininfo', verifyToken, async (req,res)=>{
             {
                 //const hashPassword = await bcrypt.hash(password,10)        
                 const hashPassword = await md5(password)
-                await db.query("UPDATE users set name =?, email =?, employeeId =?, password = ?, decryptPassword = ? WHERE id = ?",[name,email,employeeId,hashPassword,password,id])
+                await db.query("UPDATE users set name =?, email =?, employeeId =?, password = ?, decryptPassword = ?, chatDeleteInDays = ? WHERE id = ?",[name,email,employeeId,hashPassword,password,chatDeleteInDays,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"}) 
             }
             else
             {      
-                const newchatDeleteInDays = parseInt(chatDeleteInDays)
-                await db.query("UPDATE users set name =?, email =?, employeeId =?, chatDeleteInDays = ?  WHERE id = ?",[name,email,employeeId,newchatDeleteInDays,id])
+                await db.query("UPDATE users set name =?, email =?, employeeId =?, chatDeleteInDays = ?  WHERE id = ?",[name,email,employeeId,chatDeleteInDays,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"})
             }
         }

@@ -44,31 +44,37 @@ router.get('/getuserchat/:id', verifyToken, async (req,res)=>{
 router.post('/creategroup', verifyToken, async (req,res)=>{
     const {groupName,selectUsers} = req.body;
     try {
-        const db = await connectToDatabase()
-        const [rows] = await db.query('SELECT * FROM groups WHERE groupName =?',[groupName])
-        if(rows.length>0)
+        if(groupName)
         {
-            return res.status(200).json({status:'fail',message:"Group Name Already Exist!"})
-        }
-        const d = new Date();
-        const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-        const totalMember = parseInt(selectUsers.length+1)
-        const response = await db.query("INSERT INTO groups (groupName, createdBy, totalMember, createdAt) VALUES (?,?,?,?)", [groupName, req.userId, totalMember, formattedDate]) 
-        
-        
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM groups WHERE groupName =?',[groupName])
+            if(rows.length>0)
+            {
+                return res.status(200).json({status:'fail',message:"Group Name Already Exist!"})
+            }
+            const d = new Date();
+            const formattedDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+            const totalMember = parseInt(selectUsers.length+1)
+            const response = await db.query("INSERT INTO groups (groupName, createdBy, totalMember, allowedMember, createdAt) VALUES (?,?,?,?,?)", [groupName, req.userId, totalMember, 10, formattedDate]) 
+            
+            
 
-        const groupid = response[0].insertId;
-        if(groupid)
-        {
-            await db.query("INSERT INTO group_members (groupId, userId,joinedAt) VALUES (?,?,?)", [groupid, req.userId,formattedDate])
-            selectUsers.map( async (user)=>{
-                //console.log(user.value);
-                await db.query("INSERT INTO group_members (groupId, userId,joinedAt) VALUES (?,?,?)", [groupid, user.value,formattedDate])
-            })
+            const groupid = response[0].insertId;
+            if(groupid)
+            {
+                await db.query("INSERT INTO group_members (groupId, userId,joinedAt) VALUES (?,?,?)", [groupid, req.userId,formattedDate])
+                selectUsers.map( async (user)=>{
+                    //console.log(user.value);
+                    await db.query("INSERT INTO group_members (groupId, userId,joinedAt) VALUES (?,?,?)", [groupid, user.value,formattedDate])
+                })
+            }
+            
+            return res.status(200).json({status:'success',message:"Group Created Successfully!"})
         }
-        
-        return res.status(200).json({status:'success',message:"Group Created Successfully!"})
-        
+        else
+        {
+            return res.status(200).json({status:'fail',message:"Group Name Can't Empty!"})
+        }
     } catch (error) {
         res.status(500).json(error.message)
     }
@@ -78,7 +84,7 @@ router.get('/getgrouplist', verifyToken, async (req,res)=>{
     try {
         const db = await connectToDatabase()
         //const [rows] = await db.query(`SELECT groupId, groupName, upper(left(groupName,1)) as groupshortName FROM groups where createdBy = ${req.userId} ORDER BY groupId desc`)
-        const [rows] = await db.query(`SELECT group_members.groupId, groups.groupName, groups.totalMember, groups.createdBy, upper(left(groups.groupName,1)) as groupshortName FROM group_members INNER JOIN groups ON groups.groupId = group_members.groupId WHERE group_members.userId = ${req.userId}`)
+        const [rows] = await db.query(`SELECT group_members.groupId, groups.groupName, groups.totalMember, groups.allowedMember, groups.createdBy, upper(left(groups.groupName,1)) as groupshortName FROM group_members INNER JOIN groups ON groups.groupId = group_members.groupId WHERE group_members.userId = ${req.userId}`)
         if(rows.length===0)
         {
             return res.status(403).json({message:"Empty group list!"})
@@ -407,5 +413,36 @@ router.get('/getrepliedmessagesgroup/:id', verifyToken, async (req,res)=>{
     }
 })
 
+router.post('/sendaddmemberrequest', verifyToken, async (req,res)=>{
+    const {groupId,requestNumber} = req.body;
+    try {
+        if(groupId && requestNumber)
+        {
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM groups WHERE groupId =?',[groupId])
+            if(rows.length===0)
+            {
+                return res.status(200).json({status:'fail',message:"Group Not Exist!"})
+            }
+            
+            const [rowsReq] = await db.query('SELECT requestId, groupId FROM groupmemberrequest WHERE groupId =? and requestSts=?',[groupId,'Pending'])
+            if(rowsReq.length>0)
+            {
+                return res.status(200).json({status:'fail',message:"Request already sent for this Group!"})
+            }
+            
+            const response = await db.query("INSERT INTO groupmemberrequest (groupId, userId, requestNumber) VALUES (?,?,?)", [groupId, req.userId, requestNumber]) 
+            
+            
+            return res.status(200).json({status:'success',message:"Request Sent Successfully!"})
+        }
+        else
+        {
+            return res.status(200).json({status:'fail',message:"Invalid Group!"})
+        }
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
 
 export default router;

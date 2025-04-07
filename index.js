@@ -26,6 +26,7 @@ const socketIO = new Server(expressServer, {
   cors: {
     //origin: "http://localhost:5173",
     origin: "https://rc-chatapp.vercel.app",
+    //origin: "https://rapidcollaborate.in/chat-app",
     methods: ["GET", "POST"]
   }
 });
@@ -61,6 +62,7 @@ socketIO.on('connection', (socket) => {
 
         const messageId = response[0].insertId;
         data["messageId"] = messageId;
+        data["deleteSts"] = 'No';
         //console.log(data);
         
         //return res.status(200).json({status:'success',message:"success"})
@@ -86,6 +88,7 @@ socketIO.on('connection', (socket) => {
 
       const messageId = response[0].insertId;
       data["messageId"] = messageId;
+      data["deleteSts"] = 'No';
       //return res.status(200).json({status:'success',message:"success"})
       
       //socketIO.emit('savedmessageResponse', newchat);
@@ -154,6 +157,13 @@ socketIO.on('connection', (socket) => {
       //socketIO.emit('savedmessageResponse', newchat);
       socketIO.emit('messagegroupResponseReply', data);
     });
+
+    socket.on('sendaddmemberrequest', (data) => {
+      console.log(data);
+      
+      socket.broadcast.emit('reloadaddemberrequest', data)
+      }
+    );
 });
 
 app.use('/auth', authRouter)
