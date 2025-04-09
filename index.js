@@ -27,7 +27,8 @@ const socketIO = new Server(expressServer, {
     //origin: "*",
     //origin: "https://rc-chatapp.vercel.app",
     origin: "https://rapidcollaborate.in/chat-app",
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    allowedHeaders: ['Content-Type'],
   }
 });
 
