@@ -24,9 +24,9 @@ const expressServer = app.listen(process.env.PORT, () => {
 
 const socketIO = new Server(expressServer, {
   cors: {
-    //origin: "*",
+    origin: "*",
     //origin: "https://rc-chatapp.vercel.app",
-    origin: "https://rapidcollaborate.in/chat-app",
+    //origin: "https://rapidcollaborate.in/chat-app",
     methods: ["GET", "POST"],
     allowedHeaders: ['Content-Type'],
   }
