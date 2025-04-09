@@ -23,7 +23,7 @@ const verifyToken = async (req, res, next) => {
 }
 
 router.post('/adduser', verifyToken, async (req,res)=>{
-    const {name,email,employeeId,userType,chatDeleteInDays} = req.body;
+    const {name,email,employeeId,officeName,cityName,userType,chatDeleteInDays} = req.body;
     try {
         const url = "api.zeptomail.com/";
         const token = process.env.ZEPTO_KEY;    
@@ -97,7 +97,7 @@ router.post('/adduser', verifyToken, async (req,res)=>{
         //const hashPassword = await bcrypt.hash(password,10)
         //const hashPassword = await md5(password)
         //await db.query("INSERT INTO users (name, email,employeeId,password,decryptPassword,addedon) VALUES (?,?,?,?,?,?)", [name, email, employeeId, hashPassword,password,formattedDate])
-        await db.query("INSERT INTO users (name, email,userType,employeeId,verify,addedon,chatDeleteInDays) VALUES (?,?,?,?,?,?,?)", [name, email, userType, employeeId,verifyCode,formattedDate,chatDeleteInDays])
+        await db.query("INSERT INTO users (name, email,userType,employeeId,officeName,cityName,verify,addedon,chatDeleteInDays) VALUES (?,?,?,?,?,?,?,?,?)", [name, email, userType, employeeId,officeName,cityName,verifyCode,formattedDate,chatDeleteInDays])
         return res.status(200).json({status:'success',message:"User Added Successfully!"})
 
     } catch (error) {
@@ -138,7 +138,7 @@ router.get('/getadmininfo/:id', verifyToken, async (req,res)=>{
 })
 
 router.put('/updateadmininfo', verifyToken, async (req,res)=>{
-    const {id,name,email,employeeId,password,chatDeleteInDays} = req.body;
+    const {id,name,email,employeeId,officeName,cityName,password,chatDeleteInDays} = req.body;
     console.log(chatDeleteInDays);
     try {
         if(id && email)
@@ -158,12 +158,12 @@ router.put('/updateadmininfo', verifyToken, async (req,res)=>{
             {
                 //const hashPassword = await bcrypt.hash(password,10)        
                 const hashPassword = await md5(password)
-                await db.query("UPDATE users set name =?, email =?, employeeId =?, password = ?, decryptPassword = ?, chatDeleteInDays = ? WHERE id = ?",[name,email,employeeId,hashPassword,password,chatDeleteInDays,id])
+                await db.query("UPDATE users set name =?, email =?, employeeId =?, officeName =?, cityName =?, password = ?, decryptPassword = ?, chatDeleteInDays = ? WHERE id = ?", [name,email,employeeId,officeName,cityName,hashPassword,password,chatDeleteInDays,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"}) 
             }
             else
             {      
-                await db.query("UPDATE users set name =?, email =?, employeeId =?, chatDeleteInDays = ?  WHERE id = ?",[name,email,employeeId,chatDeleteInDays,id])
+                await db.query("UPDATE users set name =?, email =?, employeeId =?, officeName =?, cityName =?, chatDeleteInDays = ?  WHERE id = ?",[name,email,employeeId,officeName,cityName,chatDeleteInDays,id])
                 return res.status(200).json({status:'success',message:"Info. Updated Successfully!"})
             }
         }
@@ -304,6 +304,57 @@ router.put('/updatesettingtoactive', verifyToken, async (req,res)=>{
 
             await db.query("UPDATE users set chatStatus = ?, chatBusyDndTime = ?, chatBusyDndExpiredon = ? WHERE id = ?",['Active',null,null,req.userId])
             return res.status(200).json({status:'success',message:"Setting Info. Changed Successfully!"}) 
+        }
+        else
+        {
+            return res.status(403).json({status:'success',message:"Invalid Userid!"})
+        }
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+
+router.get('/getaddmemberrequest', verifyToken, async (req,res)=>{
+    try {
+        //console.log(req.params.searchParam);
+        const searchParam = req.params.searchParam
+        const db = await connectToDatabase()
+        const [rows] = await db.query(`SELECT gmr.requestId, gmr.groupId, gmr.requestSts, gmr.requestNumber, g.groupName, g.allowedMember, u.name, u.email, gmr.addedOn AS request_created_at FROM groupmemberrequest gmr JOIN groups g ON gmr.groupId = g.groupId JOIN users u ON gmr.userId = u.id ORDER BY gmr.addedOn DESC`)
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"Request data not Exist!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+router.put('/updatestatusaddmemberreq', async (req,res)=>{
+    const {id,status,groupId,updatedreqnumber} = req.body;
+    try {
+        if(id && status && groupId)
+        {
+            //console.log(req.body);
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM groups WHERE groupId =?',[groupId])
+            if(rows.length===0)
+            {
+                return res.status(403).json({message:"Group not Exist!"})
+            }
+            
+            await db.query("UPDATE groupmemberrequest set requestSts = ? WHERE requestId = ?",[status,id])
+            if(status=='Approved')
+            {
+                await db.query("UPDATE groups set allowedMember = ? WHERE groupId = ?",[updatedreqnumber,groupId])
+                return res.status(200).json({status:'success',message:"Request Approved Successfully!"})
+            }
+
+            return res.status(200).json({status:'success',message:"Request Rejected Successfully!"}) 
         }
         else
         {

@@ -445,4 +445,69 @@ router.post('/sendaddmemberrequest', verifyToken, async (req,res)=>{
     }
 })
 
+router.put('/updatepinstatus/:messageId/:pinstatus', verifyToken, async (req,res)=>{
+    let messageId  = req.params.messageId;
+    let newPinstatus  = req.params.pinstatus;
+    const {pinnedbyName,groupId} = req.body;
+    //console.log(pinnedbyName);
+    
+    try {
+        const decodeMessageId = atob(messageId)
+        let pinnedBy = null;
+        if(messageId && newPinstatus)
+        {
+            if(newPinstatus=='No')
+            {
+                newPinstatus = 'Yes'
+                pinnedBy = req.userId
+            }
+            else
+            {
+                newPinstatus = 'No'
+            }
+            
+            const db = await connectToDatabase()
+            const [rows] = await db.query('SELECT * FROM messages WHERE messageId =?',[decodeMessageId])
+            if(rows.length===0)
+            {
+                return res.status(403).json({message:"Message not Exist!"})
+            }
+            //console.log(decodeMessageId+'  '+newPinstatus);
+            
+            await db.query("UPDATE messages set pinSts = ?, pinnedBy = ? WHERE messageId = ?",[newPinstatus,pinnedBy,decodeMessageId])
+            
+            if(pinnedbyName)
+            {
+                const response = await db.query("INSERT INTO pinnedmessages (userName, userId, groupId, messageId, pinSts) VALUES (?,?,?,?,?)", [pinnedbyName, req.userId, groupId, decodeMessageId, newPinstatus]) 
+            }
+            return res.status(200).json({status:'success',message:"Message Pin status Updated!"}) 
+        }
+        else
+        {
+            return res.status(403).json({status:'success',message:"Invalid messageid!"})
+        }
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
+router.get('/getpinnedmessagehistory/:messageId', verifyToken, async (req,res)=>{
+    let messageId  = req.params.messageId;
+    try {
+        const db = await connectToDatabase()
+        //const [rows] = await db.query(`SELECT groupId, groupName, upper(left(groupName,1)) as groupshortName FROM groups where createdBy = ${req.userId} ORDER BY groupId desc`)
+        const [rows] = await db.query(`SELECT pinnedmessages.pinId, pinnedmessages.timestamp, pinnedmessages.pinSts, messages.messageId, messages.message AS messageContent, users.id AS userId, users.name AS username FROM pinnedmessages JOIN messages ON pinnedmessages.messageId = messages.messageId JOIN users ON pinnedmessages.userId = users.id WHERE pinnedmessages.messageId = ${messageId}`)
+        if(rows.length===0)
+        {
+            return res.status(403).json({message:"Empty pinned list!"})
+        }
+
+        return res.status(200).json(rows)
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+})
+
 export default router;

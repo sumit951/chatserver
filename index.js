@@ -13,7 +13,7 @@ dotenv.config();
 const db = await connectToDatabase()
 const app = express();
 
-app.use(cors())
+app.use(cors('*'))
 app.use(express.json())
 
 //const httpServer = createServer();
@@ -24,9 +24,9 @@ const expressServer = app.listen(process.env.PORT, () => {
 
 const socketIO = new Server(expressServer, {
   cors: {
-    //origin: "http://localhost:5173",
-    origin: "https://rc-chatapp.vercel.app",
-    //origin: "https://rapidcollaborate.in/chat-app",
+    //origin: "*",
+    //origin: "https://rc-chatapp.vercel.app",
+    origin: "https://rapidcollaborate.in/chat-app",
     methods: ["GET", "POST"]
   }
 });
@@ -100,7 +100,7 @@ socketIO.on('connection', (socket) => {
     //Listens when a new user joins the server
     socket.on('newUser', (data) => {
       //Adds the new user to the list of activeUsers
-      console.log(activeUsers);
+      //console.log(activeUsers);
       const val = { userId: data.userId };
       if(data.socketID && !activeUsers.some(activeUsers => activeUsers.userId === data.userId))
       {
@@ -161,7 +161,13 @@ socketIO.on('connection', (socket) => {
     socket.on('sendaddmemberrequest', (data) => {
       console.log(data);
       
-      socket.broadcast.emit('reloadaddemberrequest', data)
+      socket.broadcast.emit('reloadaddmemberrequest', data)
+      }
+    );
+
+    socket.on('pinStatusUpdated', (data) => {
+      //console.log(data);
+      socket.broadcast.emit('reloadpinStatusUpdated', data)
       }
     );
 });
