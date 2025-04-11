@@ -64,6 +64,7 @@ socketIO.on('connection', (socket) => {
         const messageId = response[0].insertId;
         data["messageId"] = messageId;
         data["deleteSts"] = 'No';
+        data["pinSts"] = 'No';
         //console.log(data);
         
         //return res.status(200).json({status:'success',message:"success"})
@@ -83,13 +84,14 @@ socketIO.on('connection', (socket) => {
     });
 
     socket.on('messagegroup', async (data) => {
-      console.log(data);
+      //console.log(data);
       
       const response = await db.query("INSERT INTO messages (senderName,senderId, groupId,message,messageType) VALUES (?,?,?,?,?)", [data.senderName, data.senderId, data.groupId, data.message, data.messageType])
 
       const messageId = response[0].insertId;
       data["messageId"] = messageId;
       data["deleteSts"] = 'No';
+      data["pinSts"] = 'No';
       //return res.status(200).json({status:'success',message:"success"})
       
       //socketIO.emit('savedmessageResponse', newchat);

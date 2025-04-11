@@ -28,6 +28,7 @@ router.get('/getuserchat/:id', verifyToken, async (req,res)=>{
             const decodeSenderid = atob(senderid)
             const db = await connectToDatabase()
             //const [rows] = await db.query('SELECT * FROM messages WHERE (senderid =? or receiverId =?) and receiverId=?',[req.userId,req.userId,decodeSenderid])
+            //const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId})) AND groupId IS NULL  AND replyTo IS NULL ORDER BY messages.messageId desc LIMIT 30`)
             const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${req.userId} AND receiverId = ${decodeSenderid}) OR (senderId = ${decodeSenderid} AND receiverId = ${req.userId})) AND groupId IS NULL  AND replyTo IS NULL`)
             return res.status(200).json(rows)
         }
@@ -123,7 +124,7 @@ router.get('/getgroupmember/:groupid', verifyToken, async (req,res)=>{
         {
             const decodegroupid = atob(groupid)
             const db = await connectToDatabase()
-            const [rows] = await db.query(`SELECT group_members.groupId, group_members.userId, users.name as userName, users.email as userEmail, upper(left(name,1)) as usershortName FROM group_members INNER JOIN users ON users.id = group_members.userId WHERE group_members.groupId = ${decodegroupid}`)
+            const [rows] = await db.query(`SELECT group_members.groupId, group_members.userId, users.name as userName, users.email as userEmail, upper(left(name,1)) as usershortName, officeName, cityName FROM group_members INNER JOIN users ON users.id = group_members.userId WHERE group_members.groupId = ${decodegroupid}`)
             return res.status(200).json(rows)
         }
         else
@@ -305,7 +306,9 @@ router.get('/getinteractwithuserlist/:selecteduserid', verifyToken, async (req,r
         const decodeSelectedUserId = atob(selecteduserid)
 
         const db = await connectToDatabase()
-        const [rows] = await db.query(`SELECT DISTINCT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName, u.chatStatus,u.chatBusyDndTime,u.chatBusyDndExpiredon FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId}`)
+        const [rows] = await db.query(`SELECT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName, u.chatStatus,u.chatBusyDndTime,u.chatBusyDndExpiredon,u.officeName,u.cityName FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId} GROUP BY u.id ORDER BY m.timestamp DESC`)
+        //console.log(`SELECT u.id as userId,u.name as userName,upper(left(u.name,1)) as usershortName, u.chatStatus,u.chatBusyDndTime,u.chatBusyDndExpiredon,u.officeName,u.cityName FROM users u JOIN messages m ON (m.senderId = u.id OR m.receiverId = u.id) WHERE (m.senderId = ${decodeSelectedUserId} OR m.receiverId = ${decodeSelectedUserId}) AND m.groupId IS NULL AND m.receiverId IS NOT NULL AND u.id != ${decodeSelectedUserId} GROUP BY u.id ORDER BY m.timestamp DESC`);
+        
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
@@ -496,7 +499,7 @@ router.get('/getpinnedmessagehistory/:messageId', verifyToken, async (req,res)=>
     let messageId  = req.params.messageId;
     try {
         const db = await connectToDatabase()
-        //const [rows] = await db.query(`SELECT groupId, groupName, upper(left(groupName,1)) as groupshortName FROM groups where createdBy = ${req.userId} ORDER BY groupId desc`)
+        
         const [rows] = await db.query(`SELECT pinnedmessages.pinId, pinnedmessages.timestamp, pinnedmessages.pinSts, messages.messageId, messages.message AS messageContent, users.id AS userId, users.name AS username FROM pinnedmessages JOIN messages ON pinnedmessages.messageId = messages.messageId JOIN users ON pinnedmessages.userId = users.id WHERE pinnedmessages.messageId = ${messageId}`)
         if(rows.length===0)
         {
@@ -507,6 +510,48 @@ router.get('/getpinnedmessagehistory/:messageId', verifyToken, async (req,res)=>
 
     } catch (error) {
         res.status(500).json(error.message)
+    }
+})
+
+router.post('/pinnedmessagesdata', verifyToken, async (req,res)=>{
+    const {senderId,receiverId} = req.body;
+    //console.log(req.body);
+    
+    try {
+        
+        if(senderId && receiverId)
+        {
+            const db = await connectToDatabase()
+            
+            const [rows] = await db.query(`SELECT * FROM messages WHERE ((senderId = ${receiverId} AND receiverId = ${senderId}) OR (senderId = ${senderId} AND receiverId = ${receiverId})) AND groupId IS NULL AND pinSts = 'Yes'`)
+            return res.status(200).json(rows)
+        }
+        else
+        {
+            return res.status(500).json({message:"server error2"})
+        }
+    } catch (error) {
+        res.status(500).json({message:error})
+    }
+})
+
+router.post('/pinnedmessagesgroupdata', verifyToken, async (req,res)=>{
+    const {senderId,groupId} = req.body;
+    //console.log(req.body);
+    try {
+        if(groupId)
+        {
+            //console.log(groupId);
+            const db = await connectToDatabase()
+            const [rows] = await db.query(`SELECT * FROM messages WHERE groupId = ${groupId} AND receiverId IS NULL AND replyTo IS NULL  AND pinSts = 'Yes'`)
+            return res.status(200).json(rows)
+        }
+        else
+        {
+            return res.status(500).json({message:"server error2"})
+        }
+    } catch (error) {
+        res.status(500).json({message:error})
     }
 })
 

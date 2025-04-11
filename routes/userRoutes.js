@@ -225,7 +225,7 @@ router.put('/updatestatus', async (req,res)=>{
 router.get('/getactivealluser', verifyToken, async (req,res)=>{
     try {
         const db = await connectToDatabase()
-        const [rows] = await db.query('SELECT id as userId,name as userName,upper(left(name,1)) as usershortName FROM users where status ="Active" ORDER BY id desc')
+        const [rows] = await db.query('SELECT id as userId,name as userName,upper(left(name,1)) as usershortName, officeName, cityName, userType FROM users where status ="Active" ORDER BY id desc')
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
@@ -243,7 +243,7 @@ router.get('/getactiveallusergroup/:searchParam', verifyToken, async (req,res)=>
         //console.log(req.params.searchParam);
         const searchParam = req.params.searchParam
         const db = await connectToDatabase()
-        const [rows] = await db.query(`SELECT id as userId,name as userName, email as userEmail ,upper(left(name,1)) as usershortName FROM users where status ="Active" and (name LIKE "%${searchParam}%" or email LIKE "%${searchParam}%" ) ORDER BY id desc`)
+        const [rows] = await db.query(`SELECT users.id as userId,users.name as userName, users.email as userEmail ,upper(left(users.name,1)) as usershortName, users.userType , COUNT(ug.groupId) AS groupCount FROM users LEFT JOIN group_members ug ON users.id = ug.userId where users.status ="Active" and (users.name LIKE "%${searchParam}%" or users.email LIKE "%${searchParam}%" ) GROUP BY users.id ORDER BY users.id desc`)
         if(rows.length===0)
         {
             return res.status(403).json({message:"User data not Exist!"})
